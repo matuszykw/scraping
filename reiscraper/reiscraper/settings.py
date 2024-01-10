@@ -13,7 +13,7 @@ SPIDER_MODULES = ["reiscraper.spiders"]
 NEWSPIDER_MODULE = "reiscraper.spiders"
 
 
-SCRAPEOPS_API_KEY = 'e0cc2092-8889-4b16-ac36-830083d5642e'
+SCRAPEOPS_API_KEY = ''
 SCRAPEOPS_FAKE_USER_AGENT_ENDPOINT = 'https://headers.scrapeops.io/v1/user-agents'
 SCRAPEOPS_FAKE_BROWSER_HEADERS_ENDPOINT = 'https://headers.scrapeops.io/v1/browser-headers'
 SCRAPEOPS_FAKE_USER_AGENT_ENABLED = True
