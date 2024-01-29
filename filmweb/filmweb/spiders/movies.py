@@ -6,6 +6,8 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+from ..items import FilmwebItem
+from scrapy.loader import ItemLoader
 
 class MovieSpider(scrapy.Spider):
     name = 'movies'
@@ -38,7 +40,7 @@ class MovieSpider(scrapy.Spider):
             self.log(f"Could not find or click the cookies accept button: {e}")
             
         try:
-            max_scrolls = 2  
+            max_scrolls = 20
             for _ in range(max_scrolls):
                 self.scroll_down()
 
@@ -61,18 +63,35 @@ class MovieSpider(scrapy.Spider):
                 
     
     def parse_movie(self, response):
-        data = {
-            'ranking_światowy': response.css('button.worldRankingButton span:first-child::text').get(),
-            'tytuł':response.css('h1[itemprop="name"]::text').get(),
-            'ocena': response.css('.filmRating::attr(data-rate)').get(),
-            'liczba_ocen': response.css('.filmRating::attr(data-count)').get(),
-            'gatunek': response.css('div[itemprop="genre"] span a span::text').get(),
-            'kraj_pochodzenia': response.css('.filmPosterSection__info > div:nth-of-type(4) span a span::text').get(),
-            'data_premiery': response.css('span[itemprop="datePublished"]:first-child::attr(content)').get(),
-            'przychód_us': response.xpath('//*[@id="site"]/div[3]/div[2]/div/div[11]/section[1]/div/div[2]/div/div/div[1]/div[2]/div[2]/text()').get(),
-            'przychód_świat': response.xpath('//*[@id="site"]/div[3]/div[2]/div/div[11]/section[1]/div/div[2]/div/div/div[1]/div[2]/div[1]/text()').get(),
-            'budżet': response.xpath('//*[@id="site"]/div[3]/div[2]/div/div[11]/section[1]/div/div[2]/div/div/div[1]/div[4]/text()').get()
-        }
+        original_title = response.css('.filmCoverSection__originalTitle::text').get()
+        if not original_title:
+            original_title = response.css('h1.filmCoverSection__title::text').get()
         
-        yield data
+        l = ItemLoader(item=FilmwebItem(), response=response)
+        
+        l.add_css('global_ranking', 'button.worldRankingButton span:first-child')
+        l.add_value('title', original_title)
+        l.add_css('rating', '.filmRating::attr(data-rate)')
+        l.add_css('num_of_ratings', '.filmRating::attr(data-count)')
+        l.add_css('genre', 'div[itemprop="genre"] span a span')
+        l.add_css('country_of_origin', '.filmPosterSection__info > div:nth-of-type(4) span a span')
+        l.add_css('release_date', 'span[itemprop="datePublished"]:first-child::attr(content)')
+        l.add_xpath('us_gross', '//*[@id="site"]/div[3]/div[2]/div/div[11]/section[1]/div/div[2]/div/div/div[1]/div[2]/div[2]')
+        l.add_xpath('worldwide_gross', '//*[@id="site"]/div[3]/div[2]/div/div[11]/section[1]/div/div[2]/div/div/div[1]/div[2]/div[1]/text()')
+        l.add_xpath('budget', '//*[@id="site"]/div[3]/div[2]/div/div[11]/section[1]/div/div[2]/div/div/div[1]/div[4]/text()')
+        
+        # data = {
+        #     'global_ranking': response.css('button.worldRankingButton span:first-child::text').get(),
+        #     'title': original_title,
+        #     'rating': response.css('.filmRating::attr(data-rate)').get(),
+        #     'num_of_ratings': response.css('.filmRating::attr(data-count)').get(),
+        #     'genre': response.css('div[itemprop="genre"] span a span::text').get(),
+        #     'country_of_origin': response.css('.filmPosterSection__info > div:nth-of-type(4) span a span::text').get(),
+        #     'release_date': response.css('span[itemprop="datePublished"]:first-child::attr(content)').get(),
+        #     'us_gross': response.xpath('//*[@id="site"]/div[3]/div[2]/div/div[11]/section[1]/div/div[2]/div/div/div[1]/div[2]/div[2]/text()').get(),
+        #     'worldwide_gross': response.xpath('//*[@id="site"]/div[3]/div[2]/div/div[11]/section[1]/div/div[2]/div/div/div[1]/div[2]/div[1]/text()').get(),
+        #     'budget': response.xpath('//*[@id="site"]/div[3]/div[2]/div/div[11]/section[1]/div/div[2]/div/div/div[1]/div[4]/text()').get()
+        # }
+        
+        yield l.load_item()
         
